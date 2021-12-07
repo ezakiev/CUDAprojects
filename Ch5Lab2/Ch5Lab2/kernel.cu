@@ -6,21 +6,21 @@
 #define N 10 //количество элементов массива
 
 // Ядро
-__global__ void Prod(int *a, int *b, int *c)
+__global__ void Prod(float *a, float *b, float *c)
 {
 	int i = threadIdx.x; //индексирование
 	if (i > N - 1) return; 	//проверка на выход за пределы массива
 	//поэлементное умножение массивов
-	c[i] = a[i] * b[i];
+	c[i] = __fmul_rn(a[i], b[i]);
 }
 
 int main() 
 {
 	// выделение памяти под массивы на CPU
-	int a[N], b[N], c[N];
+	float a[N], b[N], c[N];
 	// выделение памяти под массивы для копирования
 	// на GPU
-	int *dev_a, *dev_b, *dev_c;
+	float *dev_a, *dev_b, *dev_c;
 
 	// заполнение массивов
 	for (int i = 0; i < N; i++)
@@ -30,19 +30,19 @@ int main()
 	}
 
 	// выделение памяти под массивы на GPU
-	cudaMalloc((void**)&dev_a, N * sizeof(int));
-	cudaMalloc((void**)&dev_b, N * sizeof(int));
-	cudaMalloc((void**)&dev_c, N * sizeof(int));
+	cudaMalloc((void**)&dev_a, N * sizeof(float));
+	cudaMalloc((void**)&dev_b, N * sizeof(float));
+	cudaMalloc((void**)&dev_c, N * sizeof(float));
 
 	// копирование данных в память GPU
-	cudaMemcpy(dev_a, a, N * sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_b, b, N * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_a, a, N * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_b, b, N * sizeof(float), cudaMemcpyHostToDevice);
 
 	Prod <<<1, N >>>(dev_a, dev_b, dev_c);
 
-	cudaMemcpy(c, dev_c, N * sizeof(int), cudaMemcpyDeviceToHost);
+	cudaMemcpy(c, dev_c, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-	int prod = 0; //переменная для результата
+	float prod = 0; //переменная для результата
 
 	//подсчёт скалярного произведения
 	for (int i = 0; i < N; i++)
@@ -51,7 +51,7 @@ int main()
 	}
 
 	//вывод результата
-	printf("prod = %d\n", prod);
+	printf("prod = %f\n", prod);
 
 	cudaFree(dev_a);
 	cudaFree(dev_b);
