@@ -26,7 +26,7 @@ int main()
     BASE_TYPE *d_a;
 
     cudaMalloc((void**)&d_a, sizeof(BASE_TYPE));
-    cudaMemcpy(&a, d_a, sizeof(BASE_TYPE), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_a, &a, sizeof(BASE_TYPE), cudaMemcpyHostToDevice);
 
     CalculatePI <<< N, N >>> (d_a);
 
