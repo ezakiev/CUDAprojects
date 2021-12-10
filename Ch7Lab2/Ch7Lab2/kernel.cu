@@ -3,12 +3,12 @@
 #include "cmath"
 #include <stdio.h>
 
-#define N 100 //количество элементов массива
+#define N 100 //разбиение промежутка интегрирования
 #define BASE_TYPE float
 #define BLOCK_SIZE 32
 
 // Ядро
-__global__ void Prod(const BASE_TYPE* xs, BASE_TYPE* h, BASE_TYPE* F)
+__global__ void ExpIntegralByRectangle(const BASE_TYPE* xs, BASE_TYPE* h, BASE_TYPE* F)
 {
 	// Создание массивов в разделяемой памяти
 	__shared__ BASE_TYPE fsh[BLOCK_SIZE];
@@ -16,11 +16,10 @@ __global__ void Prod(const BASE_TYPE* xs, BASE_TYPE* h, BASE_TYPE* F)
 	fsh[threadIdx.x] = *h * __expf(xs[blockIdx.x * blockDim.x + threadIdx.x]);
 	// Синхронизация нитей
 	__syncthreads();
-	// Вычисление скалярного произведения
+	// Вычисление на элементраном отрезке
 	if (blockIdx.x * blockDim.x + threadIdx.x < N)
 	{
 		F[blockIdx.x * blockDim.x + threadIdx.x] = fsh[threadIdx.x];
-		printf("thread %d with %f\n", threadIdx.x, F[blockIdx.x * blockDim.x + threadIdx.x]);
 	}
 
 }
@@ -37,7 +36,7 @@ int main()
 	h = (b - a) / N; //шаг
 
 	// заполнение вектора узлов сетки
-	for (int i = 0; i < N - 1; i++)
+	for (int i = 0; i < N; i++)
 	{
 		xs[i] = a + (2 * i + 1) * h / 2;
 		//printf("%f\n", xs[i]);
@@ -53,7 +52,7 @@ int main()
 	cudaMemcpy(dev_h, &h, sizeof(BASE_TYPE), cudaMemcpyHostToDevice);
 
 	int GRID_SIZE = N / BLOCK_SIZE + 1;
-	Prod <<<GRID_SIZE, BLOCK_SIZE >>> (dev_xs, dev_h, dev_F);
+	ExpIntegralByRectangle <<<GRID_SIZE, BLOCK_SIZE >>> (dev_xs, dev_h, dev_F);
 
 	cudaMemcpy(F, dev_F, N * sizeof(float), cudaMemcpyDeviceToHost);
 
